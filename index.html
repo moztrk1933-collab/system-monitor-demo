@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="tr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>System Alert Simulation</title>
+
 <style>
 html, body {
   margin: 0;
@@ -12,9 +12,18 @@ html, body {
   height: 100%;
   overflow: hidden;
   background: #000;
-  font-family: monospace;
-  color: #ff4444;
+  font-family: 'Courier New', Courier, monospace;
+  color: #ff0000;
+  cursor: none;
 }
+
+:fullscreen,
+:-webkit-full-screen,
+:-moz-full-screen,
+:-ms-fullscreen {
+  cursor: none;
+}
+
 #screen {
   display: flex;
   flex-direction: column;
@@ -22,71 +31,181 @@ html, body {
   align-items: center;
   height: 100vh;
   text-align: center;
+  position: relative;
 }
+
 #log p {
-  margin: 4px 0;
-  font-size: 18px;
+  margin: 2px 0;
+  font-size: 20px;
+  text-shadow: 0 0 10px #ff0000, 0 0 20px #ff0000;
+  animation: flicker 1.5s infinite alternate;
 }
+
+@keyframes flicker {
+  0%,18%,22%,25%,53%,57%,100% { opacity: 1; }
+  20%,24%,55% { opacity: 0.8; }
+}
+
 #reveal {
   display: none;
-  color: #00ff88;
-  font-size: 22px;
+  color: #00ff00;
+  font-size: 24px;
   margin-top: 30px;
+  text-shadow: 0 0 10px #00ff00;
 }
-@media(max-width:600px){
+
+#noise {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.05;
+  z-index: 1;
+}
+
+#screen-content {
+  z-index: 2;
+}
+
+#fullscreen-prompt {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  color: #ff0000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  z-index: 1000;
+  cursor: pointer;
+}
+
+#fullscreen-prompt h1 {
+  font-size: 24px;
+  text-shadow: 0 0 10px #ff0000;
+}
+
+@media (max-width:600px) {
   #log p { font-size: 16px; }
   #reveal { font-size: 18px; }
+  #fullscreen-prompt h1 { font-size: 18px; }
 }
 </style>
 </head>
+
 <body>
 
+<div id="fullscreen-prompt" onclick="startFullscreen()">
+  <h1>SİSTEM HATASI</h1>
+  <p>DEVAM ETMEK İÇİN EKRANA TIKLA</p>
+</div>
+
+<canvas id="noise"></canvas>
+
 <div id="screen">
-  <div id="log"></div>
-  <div id="reveal"></div>
+  <div id="screen-content">
+    <div id="log"></div>
+    <div id="reveal"></div>
+  </div>
 </div>
 
 <script>
-// Yazılar
-const log = document.getElementById("log");
-const lines = [
-  "⚠ SYSTEM INSTABILITY DETECTED",
-  "Kernel panic simulated...",
-  "Memory map corruption...",
-  "Thread execution mismatch",
-  "Critical error detected",
-  "Attempting recovery...",
-  "System unstable..."
-];
+/* ---------- NOISE (OPTİMİZE) ---------- */
+const noiseCanvas = document.getElementById("noise");
+const noiseCtx = noiseCanvas.getContext("2d");
+let noiseRAF;
+let lastNoiseTime = 0;
 
-let i = 0;
-const typer = setInterval(() => {
-  if(i < lines.length){
-    const p = document.createElement("p");
-    p.textContent = lines[i];
-    log.appendChild(p);
-    i++;
-  } else {
-    clearInterval(typer);
-    document.getElementById("reveal").style.display = "block";
-    document.getElementById("reveal").innerHTML = "😄 RELAX<br>THIS IS A HARMLESS SIMULATION";
-  }
-}, 600);
-
-// Glitch efekt
-function glitchEffect(){
-  const dot = document.createElement("div");
-  dot.style.position = "fixed";
-  dot.style.width = "6px";
-  dot.style.height = "6px";
-  dot.style.background = "#ff0000";
-  dot.style.left = Math.random()*100+"%";
-  dot.style.top = Math.random()*100+"%";
-  dot.style.borderRadius = "50%";
-  document.body.appendChild(dot);
-  setTimeout(()=>dot.remove(), 300);
+function resizeNoise() {
+  noiseCanvas.width = innerWidth;
+  noiseCanvas.height = innerHeight;
 }
-setInterval(glitchEffect, 200);
+addEventListener("resize", resizeNoise);
+resizeNoise();
+
+function generateNoise(timestamp) {
+  if (timestamp - lastNoiseTime > 80) { // ~12 FPS
+    const img = noiseCtx.createImageData(noiseCanvas.width, noiseCanvas.height);
+    const d = img.data;
+    for (let i = 0; i < d.length; i += 4) {
+      const v = Math.random() * 255;
+      d[i] = d[i+1] = d[i+2] = v;
+      d[i+3] = 255;
+    }
+    noiseCtx.putImageData(img, 0, 0);
+    lastNoiseTime = timestamp;
+  }
+  noiseRAF = requestAnimationFrame(generateNoise);
+}
+noiseRAF = requestAnimationFrame(generateNoise);
+
+/* ---------- FULLSCREEN ---------- */
+function startFullscreen() {
+  const el = document.documentElement;
+  const done = () => {
+    document.getElementById("fullscreen-prompt").style.display = "none";
+    runMainAnimation();
+  };
+
+  if (el.requestFullscreen) {
+    el.requestFullscreen().then(done).catch(done);
+  } else if (el.webkitRequestFullscreen) {
+    el.webkitRequestFullscreen(); done();
+  } else if (el.msRequestFullscreen) {
+    el.msRequestFullscreen(); done();
+  } else {
+    done();
+  }
+}
+
+/* ---------- ANA METİNLER (DOKUNULMADI) ---------- */
+function runMainAnimation() {
+  const log = document.getElementById("log");
+  const lines = [
+    "⚠ SİSTEM KARARLILIĞI YITIRILDI",
+    "Kernel panik simülasyonu...",
+    "Bellek haritası bozuldu...",
+    "İş parçacığı yürütme uyuşmazlığı",
+    "Kritik hata tespit edildi",
+    "Kurtarma deneniyor...",
+    "SİSTEM ÇÖKMESİ ÖNLENEMİYOR",
+    "BIOS ERİŞİMİ REDDEDİLDİ",
+    "BOOT SEKTÖRÜ BOZUK",
+    "TÜM VERİ KAYBEDİLECEK..."
+  ];
+
+  let i = 0;
+  const typer = setInterval(() => {
+    if (i < lines.length) {
+      const p = document.createElement("p");
+      p.textContent = lines[i++];
+      log.appendChild(p);
+    } else {
+      clearInterval(typer);
+      document.getElementById("reveal").style.display = "block";
+      document.getElementById("reveal").innerHTML =
+        "😄 RAHAT OL<br>BU ZARARSIZ BİR SİMÜLASYON";
+      cancelAnimationFrame(noiseRAF);
+    }
+  }, 600);
+}
+
+/* ---------- GLITCH (HAFİFLETİLDİ) ---------- */
+function glitch() {
+  const d = document.createElement("div");
+  d.style.cssText = `
+    position:fixed;
+    width:2px;
+    height:2px;
+    background:rgb(${Math.random()*255},${Math.random()*255},${Math.random()*255});
+    left:${Math.random()*100}%;
+    top:${Math.random()*100}%;
+    pointer-events:none;
+    z-index:3;
+  `;
+  document.body.appendChild(d);
+  setTimeout(() => d.remove(), 200);
+}
+setInterval(glitch, 220);
 </script>
 
 </body>
