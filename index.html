@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>System Monitor</title>
+<style>
+* { box-sizing: border-box; }
+body {
+  margin:0;
+  background:black;
+  color:#ff3b3b;
+  font-family: Consolas, monospace;
+  overflow:hidden;
+}
+#overlay {
+  position:fixed;
+  inset:0;
+  background:black;
+  padding:20px;
+}
+h1 {
+  color:#ff0000;
+  font-size:22px;
+}
+#log {
+  font-size:14px;
+  line-height:1.5;
+}
+.window {
+  position:fixed;
+  background:#111;
+  border:2px solid red;
+  color:#fff;
+  padding:10px;
+  width:260px;
+  z-index:999;
+  animation: shake 0.15s infinite;
+}
+@keyframes shake {
+  0% { transform: translate(0,0); }
+  25% { transform: translate(2px,-2px); }
+  50% { transform: translate(-2px,2px); }
+  75% { transform: translate(2px,2px); }
+  100% { transform: translate(0,0); }
+}
+#reveal {
+  display:none;
+  color:#00ff88;
+  font-size:20px;
+  margin-top:30px;
+}
+</style>
+</head>
+<body>
+
+<div id="overlay">
+<h1>⚠ SYSTEM INSTABILITY DETECTED</h1>
+<div id="log"></div>
+<div id="reveal">
+😄 RELAX.<br><br>
+THIS WAS A SIMULATION.<br>
+NO DAMAGE.<br>
+NO DATA ACCESSED.<br>
+NO TRACKING.<br><br>
+PRANK COMPLETE.
+</div>
+</div>
+
+<script>
+const log = document.getElementById("log");
+const lines = [
+  "Initializing system monitor...",
+  "Loading memory map...",
+  "Kernel response delay detected",
+  "Thread execution mismatch",
+  "Buffer overflow warning (simulated)",
+  "UI response timeout",
+  "Attempting stabilization...",
+  "Critical redraw failure",
+  "System state: UNSTABLE"
+];
+
+let i = 0;
+const typer = setInterval(() => {
+  if (i < lines.length) {
+    log.innerHTML += lines[i] + "<br>";
+    i++;
+  }
+}, 400);
+
+// fake popup windows
+function spawnWindow() {
+  const w = document.createElement("div");
+  w.className = "window";
+  w.style.top = Math.random()*70 + "%";
+  w.style.left = Math.random()*70 + "%";
+  w.innerHTML = "⚠ SYSTEM ERROR<br>UI THREAD NOT RESPONDING";
+  document.body.appendChild(w);
+  setTimeout(() => w.remove(), 1200);
+}
+
+let popups = setInterval(spawnWindow, 500);
+
+// stop everything & reveal prank
+setTimeout(() => {
+  clearInterval(typer);
+  clearInterval(popups);
+  document.querySelectorAll(".window").forEach(w => w.remove());
+  document.getElementById("reveal").style.display = "block";
+}, 7000);
+</script>
+
+</body>
+</html>
